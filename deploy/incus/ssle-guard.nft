@@ -1,0 +1,75 @@
+#!/usr/sbin/nft -f
+# SSLE lab containment firewall.
+#
+# Lives in its own table so it coexists with the tables Incus manages
+# (never use "flush ruleset" here - it would wipe Incus's NAT/DHCP rules).
+# A "drop" in any nftables table is final, so these rules win even if
+# Incus's own chains would accept the packet.
+#
+# Interfaces:
+#   ens18          management NIC (vmbr0, home LAN 10.20.4.0/24)
+#   incus-default  lab bridge 10.255.255.0/24, has ens19 (vmbr1) as a port
+
+# Idempotent reload: create-if-missing, then delete and redefine.
+table inet ssle_guard
+delete table inet ssle_guard
+
+table inet ssle_guard {
+	set private4 {
+		type ipv4_addr
+		flags interval
+		elements = { 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16,
+			     100.64.0.0/10, 169.254.0.0/16 }
+	}
+
+	set lab4 {
+		type ipv4_addr
+		flags interval
+		elements = { 10.255.255.0/24 }
+	}
+
+	# ---- Routed traffic (lab <-> LAN/internet) ----
+	chain forward {
+		type filter hook forward priority filter - 10; policy accept;
+
+		# Nothing on the home LAN may open connections into the lab.
+		iifname "ens18" oifname "incus*" ct state new counter drop
+
+		# The lab is IPv4-only.
+		iifname "incus*" meta nfproto ipv6 counter drop
+
+		# The lab may never reach the home LAN or any private range
+		# (gateway .1, DNS .2, NAS, Proxmox UI, ...).
+		iifname "incus*" ip daddr @private4 ip daddr != @lab4 counter drop
+
+		# Internet egress; emptied/filled by lab-lockdown.sh.
+		iifname "incus*" oifname "ens18" jump egress
+	}
+
+	# Empty = internet allowed. "lab-lockdown.sh on" adds a drop rule here.
+	chain egress {
+	}
+
+	# ---- Traffic addressed to the VM itself ----
+	chain input {
+		type filter hook input priority filter - 10; policy accept;
+
+		iif "lo" accept
+
+		# From the lab: only DHCP + DNS from Incus's dnsmasq.
+		iifname "incus*" udp dport { 53, 67 } accept
+		iifname "incus*" tcp dport 53 accept
+		iifname "incus*" ct state established,related accept
+		# Uncomment if Prometheus (in the lab) scrapes node_exporter on the VM:
+		# iifname "incus*" tcp dport 9100 accept
+		iifname "incus*" counter drop
+
+		# From the home LAN: SSH, DHCP client, ICMP. Everything else dropped
+		# (mDNS, CUPS, any dev server you accidentally bind to 0.0.0.0).
+		iifname "ens18" ct state established,related accept
+		iifname "ens18" tcp dport 22 accept
+		iifname "ens18" udp dport { 68, 546 } accept
+		iifname "ens18" meta l4proto { icmp, ipv6-icmp } accept
+		iifname "ens18" counter drop
+	}
+}
