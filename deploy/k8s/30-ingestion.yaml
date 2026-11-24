@@ -1,0 +1,54 @@
+# Ingestion — accepts sensor readings and forwards them to storage, which it
+# finds through the registry (discovery returns storage's pod IP; the connection
+# rides the flannel pod network). Carries the per-identity rate limiter.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ingestion
+  namespace: ssle
+  labels: { app: ingestion, tier: pipeline }
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: ingestion }
+  template:
+    metadata:
+      labels: { app: ingestion, tier: pipeline }
+    spec:
+      containers:
+        - name: ingestion
+          image: ssle/ingestion:v1
+          imagePullPolicy: IfNotPresent
+          ports:
+            - { name: http, containerPort: 5001 }
+          env:
+            - { name: SERVICE_KIND, value: ingestion }
+            - { name: SERVICE_NAME, value: ingestion-01.node2.rack1.dc-k3s.pt-centro.pt }
+            - { name: SERVICE_PORT, value: "5001" }
+            - { name: REGISTRY_URL, value: http://registry:5050 }
+            - { name: REGION, value: pt-centro.pt }
+            - { name: DC,     value: dc-k3s }
+            - { name: RACK,   value: rack1 }
+            - { name: NODE,   value: node2 }
+          readinessProbe:
+            httpGet: { path: /health, port: 5001 }
+            initialDelaySeconds: 2
+            periodSeconds: 5
+          livenessProbe:
+            httpGet: { path: /health, port: 5001 }
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            requests: { cpu: 50m, memory: 32Mi }
+            limits:   { cpu: "1", memory: 256Mi }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ingestion
+  namespace: ssle
+  labels: { app: ingestion }
+spec:
+  selector: { app: ingestion }
+  ports:
+    - { name: http, port: 5001, targetPort: 5001 }

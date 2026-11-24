@@ -1,0 +1,53 @@
+# Service Registry — the discovery plane. A ClusterIP Service gives it a stable
+# in-cluster name (registry:5050) that bootstraps every other service, the way
+# registry.incus:5050 does in the Incus deployment.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: registry
+  namespace: ssle
+  labels: { app: registry, tier: discovery }
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: registry }
+  template:
+    metadata:
+      labels: { app: registry, tier: discovery }
+    spec:
+      containers:
+        - name: registry
+          image: ssle/registry:v1
+          imagePullPolicy: IfNotPresent      # use the ctr-imported local image, never pull
+          ports:
+            - { name: http, containerPort: 5050 }
+          env:
+            - { name: SERVICE_KIND, value: registry }
+            - { name: SERVICE_NAME, value: registry-01.node1.rack1.dc-k3s.pt-centro.pt }
+            - { name: SERVICE_PORT, value: "5050" }
+            - { name: REGION, value: pt-centro.pt }
+            - { name: DC,     value: dc-k3s }
+            - { name: RACK,   value: rack1 }
+            - { name: NODE,   value: node1 }
+          readinessProbe:
+            httpGet: { path: /health, port: 5050 }
+            initialDelaySeconds: 2
+            periodSeconds: 5
+          livenessProbe:
+            httpGet: { path: /health, port: 5050 }
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            requests: { cpu: 25m, memory: 32Mi }
+            limits:   { cpu: 500m, memory: 256Mi }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: registry
+  namespace: ssle
+  labels: { app: registry }
+spec:
+  selector: { app: registry }
+  ports:
+    - { name: http, port: 5050, targetPort: 5050 }

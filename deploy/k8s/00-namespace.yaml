@@ -1,0 +1,20 @@
+# SSLE telemetry stack, packaged for Kubernetes (K3s) per Guide 2 §5.
+#
+# This is a PARALLEL deployment of the same five C++ services that run as Incus
+# containers (the graded primary). It demonstrates the PaaS/orchestration
+# packaging and K8s-native horizontal scaling; it does not replace the Incus
+# stack, the monitoring layer, or the SIEM.
+#
+# Discovery is still the project's own registry (the architecture's whole
+# point), reached inside the cluster through the `registry` ClusterIP Service at
+# http://registry:5050 via Kubernetes DNS. Services register their pod IP, so
+# pod-to-pod discovery resolves over the flannel pod network.
+#
+# Location labels use dc=dc-k3s so these instances are distinguishable from the
+# Incus-hosted dc-aveiro / dc-coimbra nodes.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ssle
+  labels:
+    app.kubernetes.io/part-of: ssle

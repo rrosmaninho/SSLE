@@ -1,0 +1,54 @@
+# Analytics — polls storage (found via the registry) and exposes /report,
+# /stats and the anomaly gauge. A Service is published so its reports can be
+# reached from inside the cluster for the demo.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: analytics
+  namespace: ssle
+  labels: { app: analytics, tier: pipeline }
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: analytics }
+  template:
+    metadata:
+      labels: { app: analytics, tier: pipeline }
+    spec:
+      containers:
+        - name: analytics
+          image: ssle/analytics:v1
+          imagePullPolicy: IfNotPresent
+          ports:
+            - { name: http, containerPort: 5003 }
+          env:
+            - { name: SERVICE_KIND, value: analytics }
+            - { name: SERVICE_NAME, value: analytics-01.node2.rack1.dc-k3s.pt-centro.pt }
+            - { name: SERVICE_PORT, value: "5003" }
+            - { name: REGISTRY_URL, value: http://registry:5050 }
+            - { name: REGION, value: pt-centro.pt }
+            - { name: DC,     value: dc-k3s }
+            - { name: RACK,   value: rack1 }
+            - { name: NODE,   value: node2 }
+          readinessProbe:
+            httpGet: { path: /health, port: 5003 }
+            initialDelaySeconds: 2
+            periodSeconds: 5
+          livenessProbe:
+            httpGet: { path: /health, port: 5003 }
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            requests: { cpu: 25m, memory: 32Mi }
+            limits:   { cpu: 500m, memory: 256Mi }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: analytics
+  namespace: ssle
+  labels: { app: analytics }
+spec:
+  selector: { app: analytics }
+  ports:
+    - { name: http, port: 5003, targetPort: 5003 }

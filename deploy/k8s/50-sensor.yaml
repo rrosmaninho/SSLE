@@ -1,0 +1,62 @@
+# Sensors — a StatefulSet so each pod has a stable, unique ordinal name
+# (sensor-0, sensor-1, ...). Each pod takes that name as its NODE via the
+# downward API, so the hierarchical sensor IDs it registers
+# (sensor-01.<pod>.rack-k3s.dc-k3s.pt-centro.pt) never collide between replicas.
+#
+# This is the Kubernetes-native counterpart to the Incus deployment's
+# SENSOR_COUNT scaling: `kubectl -n ssle scale statefulset/sensor --replicas=N`
+# adds whole nodes, each running SENSOR_COUNT logical sensors — N×SENSOR_COUNT
+# sensors total, all uniquely named, with no config change elsewhere.
+apiVersion: v1
+kind: Service
+metadata:
+  name: sensor
+  namespace: ssle
+  labels: { app: sensor }
+spec:
+  clusterIP: None                  # headless: required by the StatefulSet
+  selector: { app: sensor }
+  ports:
+    - { name: http, port: 9101, targetPort: 9101 }
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: sensor
+  namespace: ssle
+  labels: { app: sensor, tier: edge }
+spec:
+  serviceName: sensor
+  replicas: 2
+  selector:
+    matchLabels: { app: sensor }
+  template:
+    metadata:
+      labels: { app: sensor, tier: edge }
+    spec:
+      containers:
+        - name: sensor
+          image: ssle/sensor:v1
+          imagePullPolicy: IfNotPresent
+          ports:
+            - { name: http, containerPort: 9101 }
+          env:
+            - { name: SERVICE_KIND, value: sensor }
+            - { name: SERVICE_PORT, value: "9101" }
+            - { name: REGISTRY_URL, value: http://registry:5050 }
+            - { name: SENSOR_COUNT, value: "5" }
+            - { name: SENSOR_PERIOD, value: "5" }
+            - { name: REGION, value: pt-centro.pt }
+            - { name: DC,     value: dc-k3s }
+            - { name: RACK,   value: rack-k3s }
+            # NODE = pod name (sensor-0, sensor-1, ...) → unique per replica.
+            - name: NODE
+              valueFrom:
+                fieldRef: { fieldPath: metadata.name }
+          readinessProbe:
+            httpGet: { path: /health, port: 9101 }
+            initialDelaySeconds: 2
+            periodSeconds: 5
+          resources:
+            requests: { cpu: 25m, memory: 32Mi }
+            limits:   { cpu: 500m, memory: 128Mi }

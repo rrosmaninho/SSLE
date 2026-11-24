@@ -1,0 +1,58 @@
+# Storage — single-writer SQLite. One replica (the single-writer bottleneck is
+# the same honest limitation documented for the Incus deployment). The DB lives
+# on the pod's writable layer under /var/lib/ssle (owned by the ssle user in the
+# image); it is intentionally ephemeral in this demonstrator — a pod restart
+# starts an empty DB, which is fine for showing the pipeline.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: storage
+  namespace: ssle
+  labels: { app: storage, tier: data }
+spec:
+  replicas: 1
+  strategy: { type: Recreate }            # single-writer: never two pods on one DB
+  selector:
+    matchLabels: { app: storage }
+  template:
+    metadata:
+      labels: { app: storage, tier: data }
+    spec:
+      containers:
+        - name: storage
+          image: ssle/storage:v1
+          imagePullPolicy: IfNotPresent
+          ports:
+            - { name: http, containerPort: 5002 }
+          env:
+            - { name: SERVICE_KIND, value: storage }
+            - { name: SERVICE_NAME, value: storage-01.node1.rack1.dc-k3s.pt-centro.pt }
+            - { name: SERVICE_PORT, value: "5002" }
+            - { name: REGISTRY_URL, value: http://registry:5050 }
+            - { name: DB_PATH, value: /var/lib/ssle/storage.db }
+            - { name: REGION, value: pt-centro.pt }
+            - { name: DC,     value: dc-k3s }
+            - { name: RACK,   value: rack1 }
+            - { name: NODE,   value: node1 }
+          readinessProbe:
+            httpGet: { path: /health, port: 5002 }
+            initialDelaySeconds: 2
+            periodSeconds: 5
+          livenessProbe:
+            httpGet: { path: /health, port: 5002 }
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            requests: { cpu: 25m, memory: 32Mi }
+            limits:   { cpu: 500m, memory: 256Mi }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: storage
+  namespace: ssle
+  labels: { app: storage }
+spec:
+  selector: { app: storage }
+  ports:
+    - { name: http, port: 5002, targetPort: 5002 }
