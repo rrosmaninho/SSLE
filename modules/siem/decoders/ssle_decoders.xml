@@ -1,0 +1,47 @@
+<!--
+  Custom decoders for SSLE service logs.
+
+  The services write access logs in Apache Common Log Format, which Wazuh
+  already decodes with its built-in `web-accesslog` decoder, so no custom
+  decoder is needed for them. That was a deliberate design choice in the
+  services: emitting a standard log format means the SIEM understands them
+  without bespoke parsing.
+
+  Two project-specific formats do need decoding. Both use a <prematch> to
+  select the line and a full-line <regex> to extract fields; no offset
+  attribute is used, because the field extraction is written against the
+  whole line rather than the remainder after the prematch.
+-->
+
+<!-- ===================================================================
+     Outbound-connection reporter (threat 2, C2 detection).
+
+       ssle-netwatch: UNEXPECTED 10.255.255.44:44312 -> 10.255.255.99:4444 (ssle-ingestion)
+     =================================================================== -->
+<decoder name="ssle-netwatch">
+  <prematch>ssle-netwatch: </prematch>
+</decoder>
+
+<!-- srcip/dstip/dstport are Wazuh *static* fields: decoding into them lets
+     rules match with the dedicated <srcip>/<dstip>/<dstport> elements.
+     conn_state is a dynamic field (OK or UNEXPECTED), set by the script. -->
+<decoder name="ssle-netwatch-fields">
+  <parent>ssle-netwatch</parent>
+  <regex>ssle-netwatch: (\S+) (\d+.\d+.\d+.\d+):(\d+) -> (\d+.\d+.\d+.\d+):(\d+) \((\S+)\)</regex>
+  <order>conn_state, srcip, srcport, dstip, dstport, process</order>
+</decoder>
+
+<!-- ===================================================================
+     Protective DNS resolver decision log (threat 3).
+
+       2026-11-21T06:10:11Z ssle-resolver action=SINKHOLE domain=bank-lab.example risk=82 client=10.255.255.40 reason=young-domain
+     =================================================================== -->
+<decoder name="ssle-resolver">
+  <prematch>ssle-resolver </prematch>
+</decoder>
+
+<decoder name="ssle-resolver-fields">
+  <parent>ssle-resolver</parent>
+  <regex>action=(\S+) domain=(\S+) risk=(\d+) client=(\d+.\d+.\d+.\d+)</regex>
+  <order>action, domain, risk, srcip</order>
+</decoder>

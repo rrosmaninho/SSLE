@@ -1,0 +1,282 @@
+<!--
+  Custom Wazuh rules for the three threats treated in this project.
+
+  Rule IDs use the 100000+ range reserved for user rules.
+    100100-100199  Threat 1 - DDoS / availability
+    100200-100299  Threat 2 - APT / C2
+    100300-100399  Threat 3 - DNS hijacking / phishing
+    100400-100499  Architecture integrity (registry tampering, forged data)
+
+  Each threat has at least one rule with an <active-response> action wired to
+  it in the manager configuration, as the project specification requires
+  ("Detect incident (3x types) and create appropriate action-response").
+
+  Note on structure: a rule using frequency/timeframe must reference a base
+  rule with <if_matched_sid>, so each correlated rule is paired with a
+  level-0 "sighting" rule that matches a single event.
+
+  Note on ORDER: Wazuh takes the FIRST matching sibling rule, so a specific
+  rule must be defined before a more general one that would also match.
+  Hence 100104 (5xx) precedes the catch-all 100100, and the port-specific
+  C2/DNS rules (100213 :4444, 100304 :53) precede the general "unexpected
+  outbound connection" rule 100212.
+-->
+
+<group name="ssle,">
+
+  <!-- ===================================================================
+       THREAT 1 - Denial of service against the ingestion service.
+
+       The services log in Common Log Format, so Wazuh's built-in web rules
+       (31100 family) already classify each request. These rules add the
+       frequency logic: a single request is normal, hundreds per minute from
+       one source is not.
+       =================================================================== -->
+
+  <!-- Sighting: one request to the ingestion endpoint. Level 0 = no alert. -->
+  <rule id="100100" level="2">
+    <!-- Chained off the built-in web-access rules. 31108 ("simple query")
+         matches a 2xx request and would otherwise win the match, so the
+         rule has to descend from it rather than from 31100.
+         Level must be > 0: Wazuh's if_matched_sid frequency counter ignores
+         level-0 rules, so a level-0 sighting would never feed 100101/100102.
+         <options>no_log</options> keeps it out of alerts.json (sensors post
+         constantly) while it still counts for the frequency rules. -->
+    <if_sid>31100,31101,31108</if_sid>
+    <url>^/ingest</url>
+    <options>no_log</options>
+    <description>SSLE: request to the ingestion endpoint</description>
+    <group>ssle_ingestion,</group>
+  </rule>
+
+  <!-- Impact sighting: an /ingest request answered with a 5xx. This must
+       OVERRIDE the built-in web-error rule, so it descends from the built-in
+       5xx codes (31120 500 .. 31123 503) and narrows them to /ingest.
+       Why not a child of 100100 (as it once was): 100100 descends from 31108
+       ("simple queries"), which only matches 2xx, so 100100 never fires for a
+       5xx and a child of it is unreachable for errors. And a plain sibling of
+       the built-in 5xx rules loses the tie to them (higher level). Overriding
+       the built-in as its child is the one placement that actually fires, and
+       it stays scoped to /ingest so other services' 5xx still match the
+       built-in rule. no_log keeps it out of alerts.json while it still counts
+       for frequency rule 100103. -->
+  <rule id="100104" level="2">
+    <if_sid>31120,31121,31122,31123</if_sid>
+    <url>^/ingest</url>
+    <options>no_log</options>
+    <!-- The web-accesslog decoder puts the HTTP status code in the static
+         field `id`; static fields use OS_Match, which has no \d ("^50"
+         matches, "^50\d" never does). Redundant with the 5xx if_sid above
+         but kept as an explicit guard. -->
+    <id>^50</id>
+    <description>SSLE: ingestion returned a 5xx</description>
+    <group>ssle_ingestion,</group>
+  </rule>
+
+  <!-- Detection. frequency/timeframe is the whole point: it distinguishes
+       load from a flood. The threshold sits well above the measured
+       baseline (~1 req/s across all sensors) so normal operation never
+       triggers it. -->
+  <rule id="100101" level="10" frequency="120" timeframe="60">
+    <if_matched_sid>100100</if_matched_sid>
+    <same_source_ip />
+    <description>SSLE: possible DoS - over 120 ingestion requests in 60s from $(srcip)</description>
+    <mitre>
+      <id>T1498</id>
+    </mitre>
+    <group>ssle_ddos,attack,</group>
+  </rule>
+
+  <!-- Escalation: sustained flooding. A separate, higher level so the
+       automatic firewall-drop is wired only to the severe case, which
+       limits the blast radius of an automated block. -->
+  <rule id="100102" level="12" frequency="300" timeframe="60">
+    <if_matched_sid>100100</if_matched_sid>
+    <same_source_ip />
+    <description>SSLE: sustained DoS against ingestion from $(srcip) - active response</description>
+    <mitre>
+      <id>T1498</id>
+    </mitre>
+    <group>ssle_ddos,attack,</group>
+  </rule>
+
+  <!-- Impact, not just volume: a target that starts refusing requests shows
+       availability loss. Correlating this with 100101 is what separates
+       "busy" from "denied". -->
+  <rule id="100103" level="10" frequency="20" timeframe="60">
+    <if_matched_sid>100104</if_matched_sid>
+    <description>SSLE: ingestion returning 5xx under load - availability impacted</description>
+    <group>ssle_ddos,</group>
+  </rule>
+
+  <!-- ===================================================================
+       THREAT 2 - APT / Command-and-Control.
+
+       Three independent signals, so detection does not rest on any single
+       one: a changed binary (FIM), an unexpected outbound connection
+       (netwatch), and a new persistence mechanism (FIM on cron/systemd).
+       =================================================================== -->
+
+  <!-- File integrity on the service binaries and configuration.
+       syscheck rule 550 = modified, 554 = new file. -->
+  <rule id="100200" level="12">
+    <if_sid>550</if_sid>
+    <field name="file">^/opt/ssle/</field>
+    <description>SSLE: service binary MODIFIED in /opt/ssle - possible implant</description>
+    <mitre>
+      <id>T1554</id>
+    </mitre>
+    <group>ssle_c2,syscheck,attack,</group>
+  </rule>
+
+  <rule id="100201" level="12">
+    <if_sid>554</if_sid>
+    <field name="file">^/opt/ssle/</field>
+    <description>SSLE: NEW file dropped in /opt/ssle - possible payload</description>
+    <mitre>
+      <id>T1105</id>
+    </mitre>
+    <group>ssle_c2,syscheck,attack,</group>
+  </rule>
+
+  <!-- Persistence: a new cron entry or systemd unit on a service host.
+       Nothing in this architecture legitimately creates these at runtime. -->
+  <rule id="100202" level="12">
+    <if_sid>550,554</if_sid>
+    <field name="file">^/etc/cron|^/var/spool/cron|^/etc/systemd/system</field>
+    <description>SSLE: persistence mechanism created or modified on a service host</description>
+    <mitre>
+      <id>T1053</id>
+      <id>T1543</id>
+    </mitre>
+    <group>ssle_c2,syscheck,attack,</group>
+  </rule>
+
+  <!-- Sighting: an established outbound connection reported by netwatch. -->
+  <rule id="100210" level="0">
+    <decoded_as>ssle-netwatch</decoded_as>
+    <description>SSLE: outbound connection observed</description>
+    <group>ssle_netwatch,</group>
+  </rule>
+
+  <!-- A DNS query leaving the lab means something other than the protective
+       resolver answered, i.e. the resolver itself was bypassed. -->
+  <rule id="100304" level="12">
+    <if_sid>100210</if_sid>
+    <dstport>^53$</dstport>
+    <field name="conn_state">^UNEXPECTED$</field>
+    <description>SSLE: DNS query sent outside the lab resolver - possible resolver hijack</description>
+    <mitre>
+      <id>T1071.004</id>
+    </mitre>
+    <group>ssle_dns,attack,</group>
+  </rule>
+
+  <!-- Anything leaving a service host for a destination that is not part of
+       the architecture. The agent script performs the classification (see
+       ssle-netwatch.sh: "not in the known set" is a negation over a list,
+       which the rule language expresses poorly). -->
+  <rule id="100212" level="12">
+    <if_sid>100210</if_sid>
+    <field name="conn_state">^UNEXPECTED$</field>
+    <description>SSLE: unexpected outbound connection to $(dstip):$(dstport) from $(process) - possible C2</description>
+    <mitre>
+      <id>T1071</id>
+    </mitre>
+    <group>ssle_c2,attack,</group>
+  </rule>
+
+  <!-- Port 4444 is the Metasploit default; called out separately so the
+       active response is wired to the unambiguous case. -->
+  <rule id="100213" level="14">
+    <if_sid>100210</if_sid>
+    <dstport>^4444$</dstport>
+    <description>SSLE: reverse shell signature - connection to $(dstip):4444 from $(process) - active response</description>
+    <mitre>
+      <id>T1071</id>
+      <id>T1059</id>
+    </mitre>
+    <group>ssle_c2,attack,</group>
+  </rule>
+
+  <!-- ===================================================================
+       THREAT 3 - DNS hijacking / phishing.
+
+       The protective resolver scores each domain and logs its decision.
+       These rules turn those decisions into security events.
+       =================================================================== -->
+
+  <rule id="100300" level="0">
+    <decoded_as>ssle-resolver</decoded_as>
+    <description>SSLE: protective DNS resolver decision</description>
+    <group>ssle_dns,</group>
+  </rule>
+
+  <rule id="100301" level="5">
+    <if_sid>100300</if_sid>
+    <action>WARN</action>
+    <description>SSLE: suspicious domain $(domain) (risk $(risk)) requested by $(srcip)</description>
+    <group>ssle_dns,</group>
+  </rule>
+
+  <rule id="100302" level="12">
+    <if_sid>100300</if_sid>
+    <action>SINKHOLE</action>
+    <description>SSLE: DNS hijack blocked - $(domain) sinkholed (risk $(risk)) for client $(srcip)</description>
+    <mitre>
+      <id>T1566</id>
+      <id>T1071</id>
+    </mitre>
+    <group>ssle_dns,attack,</group>
+  </rule>
+
+  <!-- A client repeatedly directed to hijacked domains is being actively
+       phished, not making a one-off mistake. -->
+  <rule id="100303" level="12" frequency="5" timeframe="300">
+    <if_matched_sid>100302</if_matched_sid>
+    <same_source_ip />
+    <description>SSLE: client $(srcip) repeatedly directed to hijacked domains - phishing campaign</description>
+    <mitre>
+      <id>T1566</id>
+    </mitre>
+    <group>ssle_dns,attack,</group>
+  </rule>
+
+  <!-- Rule 100304 (DNS leaving the lab) is defined in the netwatch block
+       above: it must be evaluated before the general 100212, because Wazuh
+       takes the first matching sibling rule. -->
+
+  <!-- ===================================================================
+       Architecture integrity - the exposures the attack-surface probe
+       confirmed. Not one of the three graded threats, but cheap to detect
+       and they demonstrate the registry risk.
+       =================================================================== -->
+
+  <rule id="100400" level="10">
+    <if_sid>31100,31101,31108</if_sid>
+    <url>^/unregister</url>
+    <description>SSLE: service deregistration requested by $(srcip) - verify this was an operator action</description>
+    <group>ssle_registry,</group>
+  </rule>
+
+  <!-- Sighting: a registration request. Level >0 + no_log so it feeds the
+       frequency rule 100401 without logging every legitimate registration. -->
+  <rule id="100402" level="2">
+    <if_sid>31100,31101,31108</if_sid>
+    <url>^/register</url>
+    <options>no_log</options>
+    <description>SSLE: service registration request</description>
+    <group>ssle_registry,</group>
+  </rule>
+
+  <rule id="100401" level="10" frequency="5" timeframe="60">
+    <if_matched_sid>100402</if_matched_sid>
+    <same_source_ip />
+    <description>SSLE: repeated service registrations from $(srcip) - possible discovery poisoning</description>
+    <mitre>
+      <id>T1557</id>
+    </mitre>
+    <group>ssle_registry,attack,</group>
+  </rule>
+
+</group>
