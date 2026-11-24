@@ -1,0 +1,9 @@
+=== Scalability evaluation  2026-11-24T16:03:53+00:00
+Sizes: 10 50 100   settle 45s, window 30s
+sensors  registered  reg_time   ingest_rps p95_ms   storage_rps vm_cpu%  vm_mem_MB  registry_RSS storage_RSS ingestion_RSS
+10       10          0s         2.0        43.7     2.0         1.1      197.6      213.0        248.6       156.8        
+50       50          2s         10.0       5.0      10.0        1.2      204.7      213.3        248.6       160.6        
+100      100         3s         0.0        nan      0.0         1.5      212.5      214.2        248.6       160.6        
+
+CSV: evidence/scalability-20261124-160353/results.csv
+Reset to 5 sensors/node with: bash deploy/incus/scalability-eval.sh 10
