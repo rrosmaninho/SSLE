@@ -1,0 +1,21 @@
+[Unit]
+Description=SSLE storage service
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+EnvironmentFile=/etc/ssle/env
+ExecStart=/opt/ssle/ssle-storage
+User=ssle
+Group=ssle
+Restart=always
+RestartSec=3
+# Hardening: the service needs no privileges beyond its own data directory.
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/var/lib/ssle /var/log/ssle
+
+[Install]
+WantedBy=multi-user.target
