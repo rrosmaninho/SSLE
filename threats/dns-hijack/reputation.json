@@ -1,0 +1,34 @@
+{
+  "_comment": "Local reputation data for the protective resolver. In a real deployment these fields would come from WHOIS/RDAP (domain age), threat-intel feeds (reports, category, IP reputation) and live DNSSEC validation. The lab stays offline during attacks, so the data is served from this static table and the limitation is stated in the report. Each factor contributes to: risk = category + reports + domain_age + dnssec + ip_reputation. Higher = riskier.",
+
+  "thresholds": { "warn": 40, "sinkhole": 70 },
+
+  "default": {
+    "comment": "Unknown domains: unproven, mildly suspicious, resolved but logged",
+    "category": 10, "reports": 0, "domain_age": 15, "dnssec": 10, "ip_reputation": 10,
+    "answer": null
+  },
+
+  "domains": {
+    "bank-legit.example": {
+      "comment": "The real bank: established, signed, clean - resolves normally",
+      "category": 0, "reports": 0, "domain_age": 0, "dnssec": -10, "ip_reputation": 0,
+      "answer": "10.255.255.50"
+    },
+    "ssle-portal.example": {
+      "comment": "A known-good internal service",
+      "category": 0, "reports": 0, "domain_age": 0, "dnssec": -10, "ip_reputation": 0,
+      "answer": "10.255.255.51"
+    },
+    "bank-lab.example": {
+      "comment": "The phishing clone: phishing category, reported, newly registered, unsigned, bad-reputation IP -> sinkholed",
+      "category": 40, "reports": 20, "domain_age": 25, "dnssec": 10, "ip_reputation": 15,
+      "answer": null
+    },
+    "secure-bank-login.example": {
+      "comment": "A borderline lookalike: suspicious but not yet widely reported -> WARN",
+      "category": 20, "reports": 5, "domain_age": 20, "dnssec": 10, "ip_reputation": 0,
+      "answer": null
+    }
+  }
+}
