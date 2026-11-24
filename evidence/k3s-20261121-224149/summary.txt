@@ -1,0 +1,23 @@
+K3s PaaS-packaging track — verification summary
+================================================
+Date: 2026-11-21T22:42:51+00:00
+K3s:  v1.37.2+k3s1 (2 nodes: k3s-master control-plane 10.255.255.11, k3s-node1 10.255.255.193)
+Docker (build container): 29.10.0
+
+Result: 8/8 checks passed.
+- 2 nodes Ready; 6 pods Ready spread across both nodes.
+- Discovery: 13 instances registered in-cluster (registry, storage, ingestion,
+  analytics + 10 sensors = 2 StatefulSet pods x SENSOR_COUNT 5), all unique names.
+- Data flow sensor->ingestion->storage ACROSS pods/nodes: storage grew 15 -> 44
+  rows in 12 s.
+- Analytics /report served.
+- kubectl scale statefulset/sensor 2->3 added exactly 5 sensors (10->15), no
+  hierarchical-name collisions (NODE = pod name via downward API).
+
+Containment (privileged k3s profile) re-verified from k3s-master:
+- -> home LAN gateway 10.20.4.1 : BLOCKED
+- -> home DNS 10.20.4.2:53      : BLOCKED
+- -> internet (get.k3s.io)       : 200 (lab-lockdown off, setup only)
+Pod network 10.42.0.0/16 and service CIDR 10.43.0.0/16 did not require any
+ssle-guard change: flannel inter-node traffic is VXLAN between the nodes' lab
+IPs (10.255.255.x), and pod/service traffic stays inside the nodes' netns.

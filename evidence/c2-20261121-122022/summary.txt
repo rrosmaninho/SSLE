@@ -1,0 +1,6 @@
+=== C2 / APT experiment  2026-11-21T12:20:22+00:00
+Attacker (C2): c2-attacker = 10.255.255.160
+Victim:        analytics = 10.255.255.95
+  snapshot analytics/pre-c2 taken
+  confirmed: victim cannot reach the internet (lab-lockdown active)
+  payload built: linux/x64/shell_reverse_tcp -> 10.255.255.160:4444

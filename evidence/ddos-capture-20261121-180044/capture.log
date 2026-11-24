@@ -1,0 +1,42 @@
+=== DDoS capture  2026-11-21T18:00:44+00:00  DUR=20 SWEEP=[1 2]
+==> Snapshot target (pre-capture)
+  ingestion/pre-capture
+==> Provision 2 client containers (ab)
+  target URL http://10.255.255.111:5001/ingest
+==> Throttle target to 10% CPU / 256 MiB (makes a bounded flood visible)
+==> Time-series  mode=off  (20 s, 2 clients)
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+    print(round(nan*1000,2))
+                ^^^
+NameError: name 'nan' is not defined
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+    print(round(nan*1000,2))
+                ^^^
+NameError: name 'nan' is not defined
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+    print(round(nan*1000,2))
+                ^^^
+NameError: name 'nan' is not defined
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+    print(round(nan*1000,2))
+                ^^^
+NameError: name 'nan' is not defined
+  wrote /home/rrosmaninho/SSLE/evidence/ddos-capture-20261121-180044/timeseries-off.csv (7 samples)
+==> Time-series  mode=on  (20 s, 2 clients)
+  wrote /home/rrosmaninho/SSLE/evidence/ddos-capture-20261121-180044/timeseries-on.csv (7 samples)
+==> Sweep  mode=off  counts=[1 2]
+  clients=1  peak p95=85.56 ms
+  clients=2  peak p95=112.41 ms
+==> Sweep  mode=on  counts=[1 2]
+  clients=1  peak p95=312.5 ms
+  clients=2  peak p95=4.8 ms
+==> Capture complete.  Evidence: evidence/ddos-capture-20261121-180044/
+   timeseries-off.csv timeseries-on.csv sweep-off.csv sweep-on.csv
+==> Cleanup / restore
+  removed ddos-cap-1
+  removed ddos-cap-2
+  lab restored

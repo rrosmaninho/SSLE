@@ -1,0 +1,64 @@
+==> Wazuh manager
+  PASS  wazuh-manager active
+  PASS  wazuh-indexer active
+  PASS  filebeat active
+  PASS  wazuh-dashboard active
+  PASS  15 manager processes running
+==> Agents enrolled
+  PASS  7 agents registered (6 services + manager)
+  PASS  7 agents active
+       ID: 000, Name: wazuh (server), IP: 127.0.0.1, Active/Local
+       ID: 001, Name: registry, IP: any, Active
+       ID: 002, Name: storage, IP: any, Active
+       ID: 003, Name: ingestion, IP: any, Active
+       ID: 004, Name: analytics, IP: any, Active
+       ID: 005, Name: sensors-aveiro-rack2-node1, IP: any, Active
+       ID: 006, Name: sensors-coimbra-rack1-node1, IP: any, Active
+==> Custom ruleset loaded
+  PASS  ssle_rules.xml installed
+  PASS  ssle_decoders.xml installed
+  PASS  19 custom rules defined
+
+==> THREAT 1 - DoS detection (log lines through the live ruleset)
+  PASS  ingestion request (sighting, no alert) -> rule 100100 level 2
+  PASS  ingestion 5xx (sighting, no alert) -> rule 100104 level 2
+  PASS  correlation rule 100101 loaded (frequency 120) - exercised live in the DDoS phase
+  PASS  correlation rule 100102 loaded (frequency 300) - exercised live in the DDoS phase
+  PASS  correlation rule 100103 loaded (frequency 20) - exercised live in the DDoS phase
+
+==> THREAT 2 - C2 detection
+  PASS  reverse shell to :4444 -> rule 100213 level 14
+  PASS  unexpected outbound connection -> rule 100212 level 12
+  PASS  expected architecture traffic (no alert) -> rule 100210 level 0
+
+==> THREAT 3 - DNS hijacking detection
+  PASS  sinkholed hijack attempt -> rule 100302 level 12
+  PASS  suspicious domain warning -> rule 100301 level 5
+  PASS  DNS leaving the lab resolver -> rule 100304 level 12
+
+==> Architecture integrity
+  PASS  service deregistration -> rule 100400 level 10
+
+==> Action-responses configured (spec: 3 incident types, each with a response)
+  PASS  DoS: rule 100102 triggers 'firewall-drop'
+  PASS  C2: rule 100213 triggers 'ssle-isolate'
+  PASS  DNS: rule 100303 triggers 'firewall-drop'
+  PASS  ssle-isolate response script installed on manager
+  PASS  ssle-isolate installed on agent ingestion
+  PASS  ssle-netwatch installed on agent ingestion
+  PASS  ssle-isolate installed on agent registry
+  PASS  ssle-netwatch installed on agent registry
+
+==> Agent collection configured
+  PASS  ingestion collects service access logs
+  PASS  ingestion has realtime FIM on /opt/ssle
+  PASS  registry collects service access logs
+  PASS  registry has realtime FIM on /opt/ssle
+
+==> End-to-end: generate a real event on an agent and look for the alert
+    wrote a deregistration event from 10.255.255.42; waiting for the alert...
+  PASS  event travelled agent -> manager -> alerts.json
+    rule 100400 (level 10): SSLE: service deregistration requested by 10.255.255.42 - verify this was an operator action
+    agent: ingestion
+
+Result: 35 passed, 0 failed   (saved to evidence/verify-siem-20261121-225918.txt)

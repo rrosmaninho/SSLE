@@ -1,0 +1,11 @@
+2026-11-21T23:03:02Z ssle-resolver action=ALLOW domain=bank-legit.example risk=-10 client=10.255.255.94 reason=clean
+2026-11-21T23:03:06Z ssle-resolver action=SINKHOLE domain=bank-lab.example risk=110 client=10.255.255.94 reason=bad-category,reported,young-domain,unsigned,bad-ip-reputation
+2026-11-21T23:03:06Z ssle-resolver action=WARN domain=secure-bank-login.example risk=55 client=10.255.255.94 reason=bad-category,reported,young-domain,unsigned
+2026-11-21T23:03:06Z ssle-resolver action=SINKHOLE domain=bank-lab.example risk=110 client=10.255.255.94 reason=bad-category,reported,young-domain,unsigned,bad-ip-reputation
+2026-11-21T23:03:06Z ssle-resolver action=SINKHOLE domain=bank-lab.example risk=110 client=10.255.255.94 reason=bad-category,reported,young-domain,unsigned,bad-ip-reputation
+2026-11-21T23:03:06Z ssle-resolver action=SINKHOLE domain=bank-lab.example risk=110 client=10.255.255.94 reason=bad-category,reported,young-domain,unsigned,bad-ip-reputation
+2026-11-21T23:03:07Z ssle-resolver action=SINKHOLE domain=bank-lab.example risk=110 client=10.255.255.94 reason=bad-category,reported,young-domain,unsigned,bad-ip-reputation
+2026-11-21T23:03:07Z ssle-resolver action=SINKHOLE domain=bank-lab.example risk=110 client=10.255.255.94 reason=bad-category,reported,young-domain,unsigned,bad-ip-reputation
+2026-11-21T23:03:08Z ssle-resolver action=SINKHOLE domain=bank-lab.example risk=110 client=10.255.255.94 reason=bad-category,reported,young-domain,unsigned,bad-ip-reputation
+2026-11-21T23:03:08Z ssle-resolver action=SINKHOLE domain=bank-lab.example risk=110 client=10.255.255.94 reason=bad-category,reported,young-domain,unsigned,bad-ip-reputation
+2026-11-21T23:03:08Z ssle-resolver action=SINKHOLE domain=bank-lab.example risk=110 client=10.255.255.94 reason=bad-category,reported,young-domain,unsigned,bad-ip-reputation

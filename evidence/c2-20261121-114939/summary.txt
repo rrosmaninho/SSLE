@@ -1,0 +1,24 @@
+=== C2 / APT experiment  2026-11-21T11:49:39+00:00
+Attacker (C2): c2-attacker = 10.255.255.160
+Victim:        analytics = 10.255.255.95
+  snapshot analytics/pre-c2 taken
+  confirmed: victim cannot reach the internet (lab-lockdown active)
+  payload built: linux/x64/meterpreter/reverse_tcp -> 10.255.255.160:4444
+  payload delivered as /opt/ssle/update-helper on analytics
+  payload executed; C2 channel should open to 10.255.255.160:4444
+  Wazuh FIM alerts (100200/100201, implant file): 2
+  Wazuh C2 alerts (100213, reverse shell to :4444): 0
+  no block observed (see post-mortem)
+  registry discover(analytics) after response: HTTP 200 (404 = isolated/deregistered)
+  live connections to :4444 from victim: 0
+==> Post-mortem
+Kill chain: deliver (FIM) -> execute -> C2 channel (netwatch) -> isolate.
+Three independent detections: the dropped binary (FIM), the outbound
+connection to :4444 (netwatch), and - had the attacker persisted - a new
+cron/systemd unit (rootcheck).
+Response isolates rather than kills: the service is cut out of the
+architecture (deregistered, C2 blocked) but the container is left intact
+for forensics. Detection latency is bounded by the 30s netwatch poll,
+which is the window an attacker has before isolation - a real limitation.
+Containment held throughout: lab-lockdown kept Metasploit traffic off the
+internet, and nftables kept the lab off the home LAN.

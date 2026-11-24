@@ -1,0 +1,39 @@
+=== C2 / APT experiment  2026-11-22T04:01:27+00:00
+Attacker (C2): c2-attacker = 10.255.255.160
+Victim:        analytics = 10.255.255.95
+  snapshot analytics/pre-c2 taken
+  confirmed: victim cannot reach the internet (lab-lockdown active)
+  payload built: linux/x64/shell_reverse_tcp -> 10.255.255.160:4444
+  payload delivered as /opt/ssle/update-helper on analytics
+  payload executed; C2 channel should open to 10.255.255.160:4444
+  [4mmsf[0m exploit([1m[31mmulti/handler[0m) [0m> [*] Command shell session 1 opened (10.255.255.160:4444 -> 10.255.255.95:55704) at 2026-11-22 04:01:51 +0000
+  Wazuh FIM alerts (100200/100201, implant file): 2
+  Wazuh C2 alerts (100213, reverse shell to :4444): 1
+    C2 alert: 10.255.255.95 -> 10.255.255.160:4444 (SSLE: reverse shell signature - connection to 10.255.255.160:4444 from sh - active response)
+  C2 address 10.255.255.160 BLOCKED on the victim (nftables ssle_ar)
+  registry discover(analytics) after response: HTTP 404 (404 = isolated/deregistered)
+  forensic snapshot written to /var/log/ssle/incident-response.log on the victim:
+     130841       1 root        05:09:35 /var/ossec/bin/wazuh-logcollector
+     130855       1 root        05:09:35 /var/ossec/bin/wazuh-modulesd
+     194042       1 root           00:05 /bin/sh
+     194098  130820 root           00:00 /bin/bash active-response/bin/ssle-isolate
+     194128  194098 root           00:00 ps -eo pid,ppid,user,etime,cmd --sort=start_time
+     194129  194098 root           00:00 tail -25
+    [recent files in /opt/ssle]
+    total 252
+    drwxr-xr-x 2 root root   4096 2026-11-22 04:01:44.797791724 +0000 .
+    drwxr-xr-x 3 root root   4096 2026-11-21 05:24:14.000000000 +0000 ..
+    -rwxr-xr-x 1 1000 1000 245072 2026-11-21 13:04:39.236782245 +0000 ssle-analytics
+    -rwxr-xr-x 1 1000 1000    194 2026-11-22 04:01:44.801791691 +0000 update-helper
+  live connections to :4444 from victim: 1
+==> Post-mortem
+Kill chain: deliver (FIM) -> execute -> C2 channel (netwatch) -> isolate.
+Three independent detections: the dropped binary (FIM), the outbound
+connection to :4444 (netwatch), and - had the attacker persisted - a new
+cron/systemd unit (rootcheck).
+Response isolates rather than kills: the service is cut out of the
+architecture (deregistered, C2 blocked) but the container is left intact
+for forensics. Detection latency is bounded by the 15s netwatch poll,
+which is the window an attacker has before isolation - a real limitation.
+Containment held throughout: lab-lockdown kept Metasploit traffic off the
+internet, and nftables kept the lab off the home LAN.

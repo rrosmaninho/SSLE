@@ -1,0 +1,6 @@
+=== DDoS sweeps  2026-11-23T21:46:40+00:00  PHASE=both  CAPS=[10 15 25 50 75 100]  ATTACKERS=[1 2 4 8 16 32 64]
+==> Launch 64 flood clients from ssle-loadclient (sequential) + push payload
+==> Provision legit-user prober (ssle-prober image: python3 baked in)
+==> CAPACITY sweep (fixed 4 attackers; CPU in [10 15 25 50 75 100]%)
+    draining 36s
+==> Cleanup / restore

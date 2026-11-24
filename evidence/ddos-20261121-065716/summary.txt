@@ -1,0 +1,31 @@
+=== DDoS experiment  2026-11-21T06:57:16+00:00
+Target: ingestion (10.255.255.111)
+  load-client-a = 10.255.255.244
+  load-client-b = 10.255.255.211
+==> PHASE 1 - Baseline (single client, target UNCONSTRAINED)
+baseline 1-client      | reqs 300   | rps 1317.84  | median 1     ms | p95 1     ms | failed 0    | non-2xx 0
+==> PHASE 2 - Constrain the target (limits.cpu=1, limits.memory=256MiB)
+  target constrained; repeating single-client baseline
+baseline constrained   | reqs 300   | rps 1302.79  | median 1     ms | p95 1     ms | failed 0    | non-2xx 0
+==> PHASE 3 - Paired attack (both clients at once, sustained)
+attack client-a        | reqs 4000  | rps 1911.90  | median 10    ms | p95 13    ms | failed 0    | non-2xx 0
+attack client-b        | reqs 4000  | rps 1675.70  | median 9     ms | p95 13    ms | failed 0    | non-2xx 0
+  target CPU during attack: 6.5% of its 1-core limit
+==> PHASE 4 - Detection
+  Prometheus server-side p95: 0.00475s, ingest rate: 1.5333333333333332 req/s
+  Prometheus IngestionLatencyHigh alert: not firing
+  Wazuh DoS rule hits:
+    
+==> PHASE 5 - Response (Wazuh active-response firewall-drop)
+  no firewall-drop observed (see post-mortem note)
+==> PHASE 6 - Post-mortem
+Interpretation:
+ - Compare p95 and throughput: baseline vs constrained vs paired attack.
+ - Throughput alone does not prove loss of availability; the evidence is
+   the combination of raised p95, saturated target CPU, and any non-2xx /
+   failed requests appearing only under the paired load.
+ - Detection correlates two independent signals: Prometheus p95 (server
+   latency) and the Wazuh frequency rule (request volume per source).
+ - Response: firewall-drop on the sustained-flood rule (100102), wired to
+   the severe case so a brief legitimate spike does not auto-block a client.
+ - Snapshot ingestion/pre-ddos allows a clean revert.

@@ -1,0 +1,34 @@
+=== DDoS experiment  2026-11-21T23:00:12+00:00
+Target: ingestion (10.255.255.111)
+  load-client-a = 10.255.255.184
+  load-client-b = 10.255.255.60
+==> PHASE 1 - Baseline (single client, target UNCONSTRAINED)
+baseline 1-client      | reqs 300    | rps 4712.09  | median 0     ms | p95 0      ms | failed 290  | non-2xx 290
+==> PHASE 2 - Constrain the target (hard CPU throttle: 10% of one core)
+  target throttled to 10% CPU; small single-client baseline
+baseline throttled     | reqs 80     | rps 2511.77  | median 0     ms | p95 2      ms | failed 70   | non-2xx 70
+==> PHASE 3 - Paired attack (both clients at once, time-bounded 20s)
+attack client-a        | ABORTED: target saturated (socket timeout) after 540 requests
+attack client-b        | ABORTED: target saturated (socket timeout) after 11514 requests
+  target CPU throttling under load: 175 throttle events, 70385.7 ms spent throttled
+==> PHASE 4 - Detection
+  Prometheus server-side p95: 0.004767116130232672s, ingest rate: 228.68394444444448 req/s
+  Prometheus IngestionLatencyHigh alert: not firing
+  Wazuh DoS rule hits:
+        418 "id":"100101"
+        439 "id":"100102"
+==> PHASE 5 - Response (Wazuh active-response firewall-drop)
+  ACTIVE RESPONSE FIRED - blocked source(s) on ingestion:
+    DROP       all  --  10.255.255.60        0.0.0.0/0           
+    DROP       all  --  10.255.255.184       0.0.0.0/0           
+==> PHASE 6 - Post-mortem
+Interpretation:
+ - Compare p95 and throughput: baseline vs constrained vs paired attack.
+ - Throughput alone does not prove loss of availability; the evidence is
+   the combination of raised p95, saturated target CPU, and any non-2xx /
+   failed requests appearing only under the paired load.
+ - Detection correlates two independent signals: Prometheus p95 (server
+   latency) and the Wazuh frequency rule (request volume per source).
+ - Response: firewall-drop on the sustained-flood rule (100102), wired to
+   the severe case so a brief legitimate spike does not auto-block a client.
+ - Snapshot ingestion/pre-ddos allows a clean revert.

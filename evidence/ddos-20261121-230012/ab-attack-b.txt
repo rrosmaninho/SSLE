@@ -1,0 +1,9 @@
+This is ApacheBench, Version 2.3 <$Revision$>
+Copyright 1996 Adam Twiss, Zeus Technology Ltd, http://www.zeustech.net/
+Licensed to The Apache Software Foundation, http://www.apache.org/
+
+Benchmarking 10.255.255.111 (be patient)
+Completed 5000 requests
+Completed 10000 requests
+apr_pollset_poll: The timeout specified has expired (70007)
+Total of 11514 requests completed

@@ -1,0 +1,34 @@
+=== DDoS experiment  2026-11-21T07:18:04+00:00
+Target: ingestion (10.255.255.111)
+  load-client-a = 10.255.255.244
+  load-client-b = 10.255.255.211
+==> PHASE 1 - Baseline (single client, target UNCONSTRAINED)
+baseline 1-client      | reqs 300    | rps 64.13    | median 1     ms | p95 97     ms | failed 0    | non-2xx 0
+==> PHASE 2 - Constrain the target (hard CPU throttle: 10% of one core)
+  target throttled to 10% CPU; small single-client baseline
+baseline throttled     | ABORTED: target saturated (socket timeout) after 76 requests
+==> PHASE 3 - Paired attack (both clients at once, time-bounded 20s)
+attack client-a        | ABORTED: target saturated (socket timeout) after 0 requests
+attack client-b        | ABORTED: target saturated (socket timeout) after 1312 requests
+  target CPU throttling under load: 56 throttle events, 23423.1 ms spent throttled
+==> PHASE 4 - Detection
+  Prometheus server-side p95: 0.08591758981338463s, ingest rate: 25.707068148148146 req/s
+  Prometheus IngestionLatencyHigh alert: not firing
+  Wazuh DoS rule hits:
+         82 "id":"100101"
+         99 "id":"100102"
+==> PHASE 5 - Response (Wazuh active-response firewall-drop)
+  ACTIVE RESPONSE FIRED - blocked source(s) on ingestion:
+    DROP       all  --  10.255.255.211       0.0.0.0/0           
+    DROP       all  --  10.255.255.244       0.0.0.0/0           
+==> PHASE 6 - Post-mortem
+Interpretation:
+ - Compare p95 and throughput: baseline vs constrained vs paired attack.
+ - Throughput alone does not prove loss of availability; the evidence is
+   the combination of raised p95, saturated target CPU, and any non-2xx /
+   failed requests appearing only under the paired load.
+ - Detection correlates two independent signals: Prometheus p95 (server
+   latency) and the Wazuh frequency rule (request volume per source).
+ - Response: firewall-drop on the sustained-flood rule (100102), wired to
+   the severe case so a brief legitimate spike does not auto-block a client.
+ - Snapshot ingestion/pre-ddos allows a clean revert.

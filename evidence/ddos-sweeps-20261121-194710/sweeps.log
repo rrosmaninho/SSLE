@@ -1,0 +1,33 @@
+=== DDoS sweeps  2026-11-21T19:47:10+00:00  PHASE=capacity  CAPS=[10 15 25 50 75 100]  ATTACKERS=[4]
+==> Building ssle-loadclient image (ab preinstalled)
+Error: Invalid instance name: Name can only contain alphanumeric and hyphen characters
+Error: Failed to fetch instance "_lc-build" in project "default": Instance not found
+Error: Failed to fetch instance "_lc-build" in project "default": Instance not found
+Error: Failed to fetch instance "_lc-build" in project "default": Instance not found
+Error: Failed checking instance exists "local:_lc-build": Failed to fetch instance "_lc-build" in project "default": Instance not found
+==> Launch 4 flood clients from ssle-loadclient + push payload
+Error: Image "ssle-loadclient" not found
+Error: Image "ssle-loadclient" not found
+Error: Image "ssle-loadclient" not found
+Error: Image "ssle-loadclient" not found
+Error: Failed to fetch instance "ddos-cap-1" in project "default": Instance not found
+Error: Failed to fetch instance "ddos-cap-2" in project "default": Instance not found
+Error: Failed to fetch instance "ddos-cap-3" in project "default": Instance not found
+Error: Failed to fetch instance "ddos-cap-4" in project "default": Instance not found
+==> Provision legit-user prober
+==> CAPACITY sweep (fixed 4 attackers; CPU in [10 15 25 50 75 100]%)
+    draining 36s
+  cap=10% off  user_p95=5.29 ms  server_p95=4.94 ms
+    draining 36s
+  cap=10% on  user_p95=3.5 ms  server_p95=6.25 ms
+    draining 36s
+  cap=15% off  user_p95=3.49 ms  server_p95=4.89 ms
+    draining 36s
+  cap=15% on  user_p95=3.61 ms  server_p95=4.75 ms
+    draining 36s
+  cap=25% off  user_p95=3.45 ms  server_p95=4.89 ms
+    draining 36s
+  cap=25% on  user_p95=3.55 ms  server_p95=5.0 ms
+    draining 36s
+  cap=50% off  user_p95=3.49 ms  server_p95=4.83 ms
+    draining 36s

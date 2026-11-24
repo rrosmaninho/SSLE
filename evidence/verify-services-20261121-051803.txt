@@ -1,0 +1,49 @@
+==> Containers and services
+  PASS  registry: service active
+  PASS  storage: service active
+  PASS  ingestion: service active
+  PASS  analytics: service active
+  PASS  sensors-aveiro-rack2-node1: service active
+  PASS  sensors-coimbra-rack1-node1: service active
+  PASS  registry: runs as unprivileged user 'ssle'
+  PASS  storage: runs as unprivileged user 'ssle'
+  PASS  ingestion: runs as unprivileged user 'ssle'
+  PASS  analytics: runs as unprivileged user 'ssle'
+  PASS  sensors-aveiro-rack2-node1: runs as unprivileged user 'ssle'
+  PASS  sensors-coimbra-rack1-node1: runs as unprivileged user 'ssle'
+==> Registry and naming
+  PASS  registry has 13 instances (expected 13)
+  PASS  all 13 instances healthy
+  PASS  all names follow <kind>-NN.node.rack.dc.region
+  registry contents:
+    analytics  ok     analytics-01.node2.rack1.dc-aveiro.pt-centro.pt      http://10.255.255.57:5003
+    ingestion  ok     ingestion-01.node2.rack1.dc-aveiro.pt-centro.pt      http://10.255.255.133:5001
+    sensor     ok     sensor-01.node1.rack1.dc-coimbra.pt-centro.pt        http://10.255.255.113:9101
+    sensor     ok     sensor-01.node1.rack2.dc-aveiro.pt-centro.pt         http://10.255.255.204:9101
+    sensor     ok     sensor-02.node1.rack1.dc-coimbra.pt-centro.pt        http://10.255.255.113:9101
+    sensor     ok     sensor-02.node1.rack2.dc-aveiro.pt-centro.pt         http://10.255.255.204:9101
+    sensor     ok     sensor-03.node1.rack1.dc-coimbra.pt-centro.pt        http://10.255.255.113:9101
+    sensor     ok     sensor-03.node1.rack2.dc-aveiro.pt-centro.pt         http://10.255.255.204:9101
+    sensor     ok     sensor-04.node1.rack1.dc-coimbra.pt-centro.pt        http://10.255.255.113:9101
+    sensor     ok     sensor-04.node1.rack2.dc-aveiro.pt-centro.pt         http://10.255.255.204:9101
+    sensor     ok     sensor-05.node1.rack1.dc-coimbra.pt-centro.pt        http://10.255.255.113:9101
+    sensor     ok     sensor-05.node1.rack2.dc-aveiro.pt-centro.pt         http://10.255.255.204:9101
+    storage    ok     storage-01.node1.rack1.dc-aveiro.pt-centro.pt        http://10.255.255.200:5002
+==> Discovery (no hardcoded addresses)
+  PASS  discover(storage) -> http://10.255.255.200:5002
+  PASS  discover(ingestion) -> http://10.255.255.133:5001
+  PASS  discover(analytics) -> http://10.255.255.57:5003
+  PASS  unknown kind returns 404
+  PASS  sensor node resolves registry.incus
+==> Data flow: sensors -> ingestion -> storage -> analytics
+  PASS  storage grew 372 -> 396 in 12 s (24 readings)
+  PASS  analytics sees 377 readings, avg 19.11161803713528C
+==> Prometheus endpoints
+  PASS  registry:5050/metrics exposes ssle_registry_total
+  PASS  storage:5002/metrics exposes ssle_storage_rows
+  PASS  ingestion:5001/metrics exposes ssle_ingestion_received_total
+  PASS  analytics:5003/metrics exposes ssle_analytics_readings
+  PASS  sensors-aveiro-rack2-node1:9101/metrics exposes ssle_sensor_count
+  PASS  sensors-coimbra-rack1-node1:9101/metrics exposes ssle_sensor_count
+
+Result: 28 passed, 0 failed   (saved to evidence/verify-services-20261121-051803.txt)

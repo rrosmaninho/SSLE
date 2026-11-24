@@ -1,0 +1,30 @@
+==> Services
+  PASS  prometheus active
+  PASS  prometheus-alertmanager active
+  PASS  prometheus config valid
+  PASS  alertmanager config valid
+==> Target discovery (from the registry, not a static list)
+  PASS  13 active targets discovered
+  PASS  all targets healthy
+  PASS  registry /sd advertises 5 targets
+  PASS  no duplicate scrape targets (sensor nodes deduplicated)
+==> Application metrics
+  PASS  ssle_registry_total present (1 series)
+  PASS  ssle_storage_rows present (1 series)
+  PASS  ssle_ingestion_received_total present (2 series)
+  PASS  ssle_analytics_readings present (1 series)
+  PASS  ssle_sensor_sent_total present (10 series)
+  PASS  node_cpu_seconds_total present (672 series)
+==> Per-location monitoring (the bonus: monitor by location)
+  PASS  readings aggregate across 2 datacenters
+  PASS  fleet health split across 3 dc/rack buckets
+==> Alert rules
+  PASS  14 alert rules loaded
+  PASS  6 inhibition rules for root-cause correlation
+==> Baseline (recorded for the DDoS comparison later)
+  ingestion p95 latency : 0.00475 s
+  ingestion request rate: 0.5 req/s
+  VM CPU used           : 6.189836543210006 %
+  PASS  p95 latency baseline measurable
+
+Result: 19 passed, 0 failed   (saved to evidence/verify-monitoring-20261121-054833.txt)

@@ -1,0 +1,6 @@
+=== DDoS sweeps  2026-11-23T18:09:27+00:00  PHASE=capacity  CAPS=[10 15 25 50 75 100]  ATTACKERS=[4]
+==> Launch 4 flood clients from ssle-loadclient + push payload
+==> Provision legit-user prober
+  ERROR: python3 unavailable in prober (lab-lockdown on? no egress for apt)
+==> Cleanup / restore
+  lab restored

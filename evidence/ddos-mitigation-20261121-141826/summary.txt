@@ -1,0 +1,19 @@
+=== DoS mitigation comparison  2026-11-21T14:18:26+00:00
+Bounded flood: 3000 requests, concurrency 10, single sensor identity.
+
+BEFORE: rate limiting effectively disabled (RATE_LIMIT_RPS very high)
+
+AFTER:  per-identity rate limiting at the default 5 req/s, burst 10
+
+Reading the table:
+ - "junk stored" is the attacker's impact on the data store. The control cuts
+   it to roughly the burst size: the flood is shed at the service before it
+   reaches storage, so the database is protected.
+ - The control is PROACTIVE (it acts on the first request, in the data path)
+   and complements the REACTIVE SIEM firewall-drop (which blocks the source
+   after the sustained-flood rule fires).
+ - What it does NOT stop: an attacker who rotates through many distinct
+   identities gets one burst each. That flood is instead visible as a surge of
+   unknown/implausible sensor identities (the anomaly rules) and as a growing
+   bucket count; per-identity limiting raises the attacker's cost rather than
+   closing the attack entirely.

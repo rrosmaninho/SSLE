@@ -1,0 +1,2 @@
+=== DDoS sweeps  2026-11-23T18:09:53+00:00  PHASE=attacker  CAPS=[10 15 25 50 75 100]  ATTACKERS=[1 2 4 8 16 32 64 128]
+==> Launch 128 flood clients from ssle-loadclient + push payload

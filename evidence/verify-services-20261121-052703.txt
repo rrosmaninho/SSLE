@@ -1,0 +1,58 @@
+==> Containers and services
+  PASS  registry: service active
+  PASS  storage: service active
+  PASS  ingestion: service active
+  PASS  analytics: service active
+  PASS  sensors-aveiro-rack2-node1: service active
+  PASS  sensors-coimbra-rack1-node1: service active
+  FAIL  registry: runs as '' (expected ssle)
+  FAIL  storage: runs as '' (expected ssle)
+  FAIL  ingestion: runs as '' (expected ssle)
+  FAIL  analytics: runs as '' (expected ssle)
+  FAIL  sensors-aveiro-rack2-node1: runs as '' (expected ssle)
+  FAIL  sensors-coimbra-rack1-node1: runs as '' (expected ssle)
+==> Registry and naming
+  PASS  registry has 13 instances (expected 13)
+  PASS  all 13 instances healthy
+  PASS  all names follow <kind>-NN.node.rack.dc.region
+  registry contents:
+    analytics  ok     analytics-01.node2.rack1.dc-aveiro.pt-centro.pt      http://10.255.255.95:5003
+    ingestion  ok     ingestion-01.node2.rack1.dc-aveiro.pt-centro.pt      http://10.255.255.111:5001
+    sensor     ok     sensor-01.node1.rack1.dc-coimbra.pt-centro.pt        http://10.255.255.6:9101
+    sensor     ok     sensor-01.node1.rack2.dc-aveiro.pt-centro.pt         http://10.255.255.72:9101
+    sensor     ok     sensor-02.node1.rack1.dc-coimbra.pt-centro.pt        http://10.255.255.6:9101
+    sensor     ok     sensor-02.node1.rack2.dc-aveiro.pt-centro.pt         http://10.255.255.72:9101
+    sensor     ok     sensor-03.node1.rack1.dc-coimbra.pt-centro.pt        http://10.255.255.6:9101
+    sensor     ok     sensor-03.node1.rack2.dc-aveiro.pt-centro.pt         http://10.255.255.72:9101
+    sensor     ok     sensor-04.node1.rack1.dc-coimbra.pt-centro.pt        http://10.255.255.6:9101
+    sensor     ok     sensor-04.node1.rack2.dc-aveiro.pt-centro.pt         http://10.255.255.72:9101
+    sensor     ok     sensor-05.node1.rack1.dc-coimbra.pt-centro.pt        http://10.255.255.6:9101
+    sensor     ok     sensor-05.node1.rack2.dc-aveiro.pt-centro.pt         http://10.255.255.72:9101
+    storage    ok     storage-01.node1.rack1.dc-aveiro.pt-centro.pt        http://10.255.255.32:5002
+==> Discovery (no hardcoded addresses)
+  PASS  discover(storage) -> http://10.255.255.32:5002
+  PASS  discover(ingestion) -> http://10.255.255.111:5001
+  PASS  discover(analytics) -> http://10.255.255.95:5003
+  PASS  unknown kind returns 404
+  PASS  sensor node resolves registry.incus
+==> Data flow: sensors -> ingestion -> storage -> analytics
+  PASS  storage grew 70 -> 100 in 12 s (30 readings)
+  PASS  analytics sees 90 readings, avg 19.869444444444444C
+==> Prometheus endpoints
+  PASS  registry:5050/metrics exposes ssle_registry_total
+  PASS  storage:5002/metrics exposes ssle_storage_rows
+  PASS  ingestion:5001/metrics exposes ssle_ingestion_received_total
+  PASS  analytics:5003/metrics exposes ssle_analytics_readings
+  PASS  sensors-aveiro-rack2-node1:9101/metrics exposes ssle_sensor_count
+  PASS  sensors-coimbra-rack1-node1:9101/metrics exposes ssle_sensor_count
+==> Self-healing: restart registry (in-memory state is lost)
+  right after restart: 0 instances
+  PASS  all 13 instances re-registered within 15 s
+==> Failure detection: stop ingestion, expect STALE and removal from discovery
+  PASS  ingestion marked stale after TTL
+  PASS  discover(ingestion) returns 404 while it is down
+  PASS  sensors record failed sends (45) during the outage
+==> Recovery
+  PASS  data flowing again after ingestion restart (150 -> 170)
+
+Result: 27 passed, 6 failed   (saved to evidence/verify-services-20261121-052703.txt)

@@ -1,0 +1,15 @@
+    283       1 root           03:15 /var/ossec/bin/wazuh-logcollector
+    297       1 root           03:15 /var/ossec/bin/wazuh-modulesd
+   1251       1 root           00:28 /bin/sh
+   1388     246 root           00:00 /bin/bash active-response/bin/ssle-isolate
+   1416    1388 root           00:00 ps -eo pid,ppid,user,etime,cmd --sort=start_time
+   1417    1388 root           00:00 tail -25
+[recent files in /opt/ssle]
+total 248
+drwxr-xr-x 2 root root   4096 2026-11-21 12:23:05.276429167 +0000 .
+drwxr-xr-x 3 root root   4096 2026-11-21 05:24:14.000000000 +0000 ..
+-rwxr-xr-x 1 1000 1000 238184 2026-11-21 05:26:24.845312088 +0000 ssle-analytics
+-rwxr-xr-x 1 1000 1000    194 2026-11-21 12:23:05.276429167 +0000 update-helper
+[cron]
+--- end snapshot
+2026-11-21T12:23:33+00:00 ssle-isolate: incident snapshot written to /var/log/ssle/incident-response.log

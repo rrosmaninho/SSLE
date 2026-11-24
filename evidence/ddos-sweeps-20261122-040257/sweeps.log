@@ -1,0 +1,56 @@
+=== DDoS sweeps  2026-11-22T04:02:57+00:00  PHASE=both  CAPS=[10 15 25 50 75 100]  ATTACKERS=[1 2 4 8 16 32]
+==> Launch 32 flood clients from ssle-loadclient + push payload
+==> Provision legit-user prober
+==> CAPACITY sweep (fixed 4 attackers; CPU in [10 15 25 50 75 100]%)
+    draining 36s
+  cap=10% off  user_p95=2101.01 ms  server_p95=180.18 ms
+    draining 36s
+  cap=10% on  user_p95=4294.36 ms  server_p95=4.83 ms
+    draining 36s
+  cap=15% off  user_p95=2059.26 ms  server_p95=87.11 ms
+    draining 36s
+  cap=15% on  user_p95=5003.32 ms  server_p95=4.76 ms
+    draining 36s
+  cap=25% off  user_p95=399.39 ms  server_p95=74.04 ms
+    draining 36s
+  cap=25% on  user_p95=1096.24 ms  server_p95=4.75 ms
+    draining 36s
+  cap=50% off  user_p95=304.5 ms  server_p95=224.63 ms
+    draining 36s
+  cap=50% on  user_p95=89.1 ms  server_p95=4.87 ms
+    draining 36s
+  cap=75% off  user_p95=1190.52 ms  server_p95=93.49 ms
+    draining 36s
+  cap=75% on  user_p95=80.27 ms  server_p95=4.89 ms
+    draining 36s
+  cap=100% off  user_p95=97.49 ms  server_p95=46.05 ms
+    draining 36s
+  cap=100% on  user_p95=3.35 ms  server_p95=4.86 ms
+==> ATTACKER sweep (fixed 15% CPU; attackers in [1 2 4 8 16 32])
+    draining 36s
+  attackers=1 off  junk=9491 rows  server_p95=73.92 ms
+    draining 36s
+  attackers=1 on  junk=110 rows  server_p95=4.91 ms
+    draining 36s
+  attackers=2 off  junk=9155 rows  server_p95=82.17 ms
+    draining 36s
+  attackers=2 on  junk=110 rows  server_p95=4.76 ms
+    draining 36s
+  attackers=4 off  junk=8734 rows  server_p95=87.12 ms
+    draining 36s
+  attackers=4 on  junk=112 rows  server_p95=4.91 ms
+    draining 36s
+  attackers=8 off  junk=9035 rows  server_p95=115.0 ms
+    draining 36s
+  attackers=8 on  junk=133 rows  server_p95=7.5 ms
+    draining 36s
+  attackers=16 off  junk=9005 rows  server_p95=4.75 ms
+    draining 36s
+  attackers=16 on  junk=125 rows  server_p95=4.75 ms
+    draining 36s
+  attackers=32 off  junk=8825 rows  server_p95=92.77 ms
+    draining 36s
+  attackers=32 on  junk=149 rows  server_p95=63.75 ms
+==> Sweeps complete. Evidence: evidence/ddos-sweeps-20261122-040257/
+==> Cleanup / restore
+  lab restored

@@ -1,0 +1,7 @@
+NAME                         READY   STATUS    RESTARTS   AGE   IP           NODE         NOMINATED NODE   READINESS GATES
+analytics-6dc76d995b-k5ttc   1/1     Running   0          18s   10.42.1.4    k3s-node1    <none>           <none>
+ingestion-7d8fc5679f-g9kln   1/1     Running   0          18s   10.42.0.10   k3s-master   <none>           <none>
+registry-8598968cdb-6hhh4    1/1     Running   0          18s   10.42.0.9    k3s-master   <none>           <none>
+sensor-0                     1/1     Running   0          18s   10.42.1.5    k3s-node1    <none>           <none>
+sensor-1                     1/1     Running   0          11s   10.42.0.12   k3s-master   <none>           <none>
+storage-76cc7bd9c8-6dmkw     1/1     Running   0          18s   10.42.0.11   k3s-master   <none>           <none>

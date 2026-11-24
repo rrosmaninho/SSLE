@@ -1,0 +1,69 @@
+=== DDoS sweeps  2026-11-23T15:57:34+00:00  PHASE=both  CAPS=[10 15 25 50 75 100]  ATTACKERS=[1 2 4 8 16 32 64 128]
+==> Launch 128 flood clients from ssle-loadclient + push payload
+==> Provision legit-user prober
+Error: Instance is not running
+==> CAPACITY sweep (fixed 4 attackers; CPU in [10 15 25 50 75 100]%)
+    draining 36s
+Error: Instance is not running
+  cap=10% off  user_p95= ms  server_p95=312.13 ms
+    draining 36s
+Error: Instance is not running
+  cap=10% on  user_p95= ms  server_p95=4.91 ms
+    draining 36s
+Error: Instance is not running
+  cap=15% off  user_p95= ms  server_p95=117.34 ms
+    draining 36s
+Error: Instance is not running
+  cap=15% on  user_p95= ms  server_p95=62.5 ms
+    draining 36s
+Error: Instance is not running
+  cap=25% off  user_p95= ms  server_p95=79.61 ms
+    draining 36s
+Error: Instance is not running
+  cap=25% on  user_p95= ms  server_p95=4.91 ms
+    draining 36s
+Error: Instance is not running
+  cap=50% off  user_p95= ms  server_p95=245.53 ms
+    draining 36s
+Error: Instance is not running
+  cap=50% on  user_p95= ms  server_p95=6.25 ms
+    draining 36s
+Error: Instance is not running
+  cap=75% off  user_p95= ms  server_p95=97.11 ms
+    draining 36s
+Error: Instance is not running
+  cap=75% on  user_p95= ms  server_p95=4.75 ms
+    draining 36s
+Error: Instance is not running
+  cap=100% off  user_p95= ms  server_p95=145.79 ms
+    draining 36s
+Error: Instance is not running
+  cap=100% on  user_p95= ms  server_p95=4.75 ms
+==> ATTACKER sweep (fixed 15% CPU; attackers in [1 2 4 8 16 32 64 128])
+    draining 36s
+  attackers=1 off  junk=8256 rows  server_p95=85.04 ms
+    draining 36s
+  attackers=1 on  junk=110 rows  server_p95=4.76 ms
+    draining 36s
+  attackers=2 off  junk=8635 rows  server_p95=89.57 ms
+    draining 36s
+  attackers=2 on  junk=111 rows  server_p95=4.76 ms
+    draining 36s
+  attackers=4 off  junk=7684 rows  server_p95=196.3 ms
+    draining 36s
+  attackers=4 on  junk=112 rows  server_p95=62.5 ms
+    draining 36s
+  attackers=8 off  junk=8104 rows  server_p95=138.42 ms
+    draining 36s
+  attackers=8 on  junk=111 rows  server_p95=4.76 ms
+    draining 36s
+  attackers=16 off  junk=7502 rows  server_p95=231.33 ms
+    draining 36s
+  attackers=16 on  junk=142 rows  server_p95=6.25 ms
+    draining 36s
+  attackers=32 off  junk=7573 rows  server_p95=222.6 ms
+    draining 36s
+  attackers=32 on  junk=149 rows  server_p95=9.69 ms
+    draining 36s
+  attackers=64 off  junk=7796 rows  server_p95=266.41 ms
+    draining 36s

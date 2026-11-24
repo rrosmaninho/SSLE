@@ -1,0 +1,45 @@
+=== Attack-surface probe  2026-11-21T05:51:54+00:00
+Attacker model: unauthenticated host on the lab network, no credentials.
+
+Attacker container: 10.255.255.185
+
+--- 1. Reconnaissance: can the attacker enumerate the architecture?
+  [!] Registry /services is unauthenticated: full inventory of 13 instances, with hierarchical names, IPs, ports and physical location
+       e.g. analytics-01.node2.rack1.dc-aveiro.pt-centro.pt -> http://10.255.255.95:5003
+       e.g. ingestion-01.node2.rack1.dc-aveiro.pt-centro.pt -> http://10.255.255.111:5001
+       e.g. sensor-01.node1.rack1.dc-coimbra.pt-centro.pt -> http://10.255.255.6:9101
+  [!] Registry /sd exposes the monitoring target list (maps the whole fleet)
+
+--- 2. Service discovery integrity: can the attacker tamper with the registry?
+  [!] Registry /register is unauthenticated: an attacker can register arbitrary services (discovery poisoning - traffic can be redirected to attacker-controlled endpoints)
+  [!] Discovery now returns the attacker's address for kind=decoy - clients would connect to the attacker
+  [!] Registry /unregister is unauthenticated: any instance can be evicted from the architecture (denial of service by deregistration)
+
+--- 3. Data integrity: can the attacker inject sensor data?
+  [!] Ingestion /ingest is unauthenticated: forged readings from a non-existent sensor are accepted and stored (HTTP 201)
+
+--- 4. Confidentiality: can the attacker read stored data?
+  [!] Storage /readings is unauthenticated: historical measurements can be read directly, bypassing ingestion
+  [!] Analytics /report is unauthenticated (aggregate disclosure)
+
+--- 5. Monitoring plane: is the observability stack exposed?
+  [!] Prometheus API is unauthenticated: an attacker can read all metrics and learn the full topology
+  [!] Alertmanager API is unauthenticated: alerts are readable and silences can be created (detection can be muted)
+  [!] node_exporter is unauthenticated on every container (host inventory: kernel, filesystems, network)
+
+--- 6. Transport: is traffic protected?
+  [!] All inter-service traffic is plain HTTP - no TLS, no mutual authentication (interception and tampering possible for an on-path attacker)
+
+--- 7. Containment: can the attacker escape the lab?
+  [ok] Home LAN unreachable from the lab (nftables ssle_guard)
+  [ok] VM SSH unreachable from the lab
+  [ok] Internet reachable (expected while building; 'lab-lockdown on' closes it for attack runs)
+
+--- 8. Privilege: what does the attacker get on a compromised service container?
+  [ok] No compiler in service containers (runtime image only)
+  [ok] Services run as unprivileged user 'ssle', not root
+  [ok] systemd hardening active (ProtectSystem=strict, NoNewPrivileges, ProtectHome)
+  [ok] Container is unprivileged (security.privileged unset)
+
+=== 12 exposures recorded. Full output: evidence/attack-surface-20261121-055154.txt
+Note: the forged reading and the decoy registration are test artefacts.

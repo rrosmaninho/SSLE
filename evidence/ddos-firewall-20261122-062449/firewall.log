@@ -1,0 +1,7 @@
+=== DDoS firewall-drop  2026-11-22T06:24:49+00:00
+==> throttle + limiter OFF + agent ON + reset AR state
+==> flood clients
+==> start flood (80s); firewall-drop should land mid-run
+==> done. blocks at end: 2. Evidence: evidence/ddos-firewall-20261122-062449/
+==> cleanup
+  lab restored

@@ -1,0 +1,56 @@
+This is ApacheBench, Version 2.3 <$Revision$>
+Copyright 1996 Adam Twiss, Zeus Technology Ltd, http://www.zeustech.net/
+Licensed to The Apache Software Foundation, http://www.apache.org/
+
+Benchmarking 10.255.255.111 (be patient)
+Completed 300 requests
+Completed 600 requests
+Completed 900 requests
+Completed 1200 requests
+Completed 1500 requests
+Completed 1800 requests
+Completed 2100 requests
+Completed 2400 requests
+Completed 2700 requests
+Completed 3000 requests
+Finished 3000 requests
+
+
+Server Software:        
+Server Hostname:        10.255.255.111
+Server Port:            5001
+
+Document Path:          /ingest
+Document Length:        17 bytes
+
+Concurrency Level:      10
+Time taken for tests:   0.896 seconds
+Complete requests:      3000
+Failed requests:        0
+Total transferred:      375000 bytes
+Total body sent:        939000
+HTML transferred:       51000 bytes
+Requests per second:    3349.83 [#/sec] (mean)
+Time per request:       2.985 [ms] (mean)
+Time per request:       0.299 [ms] (mean, across all concurrent requests)
+Transfer rate:          408.92 [Kbytes/sec] received
+                        1023.92 kb/s sent
+                        1432.84 kb/s total
+
+Connection Times (ms)
+              min  mean[+/-sd] median   max
+Connect:        0    0   0.0      0       0
+Processing:     1    3   0.4      3       6
+Waiting:        1    3   0.4      3       6
+Total:          1    3   0.4      3       6
+
+Percentage of the requests served within a certain time (ms)
+  50%      3
+  66%      3
+  75%      3
+  80%      3
+  90%      3
+  95%      3
+  98%      4
+  99%      4
+ 100%      6 (longest request)

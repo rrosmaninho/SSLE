@@ -1,0 +1,33 @@
+=== DDoS sweeps  2026-11-21T20:04:22+00:00  PHASE=capacity  CAPS=[10 15 25 50 75 100]  ATTACKERS=[4]
+==> Building ssle-loadclient image (ab preinstalled)
+  published ssle-loadclient
+==> Launch 4 flood clients from ssle-loadclient + push payload
+==> Provision legit-user prober
+==> CAPACITY sweep (fixed 4 attackers; CPU in [10 15 25 50 75 100]%)
+    draining 36s
+  cap=10% off  user_p95=1101.67 ms  server_p95=114.08 ms
+    draining 36s
+  cap=10% on  user_p95=5004.27 ms  server_p95=22.17 ms
+    draining 36s
+  cap=15% off  user_p95=1006.77 ms  server_p95=79.84 ms
+    draining 36s
+  cap=15% on  user_p95=4101.77 ms  server_p95=19.37 ms
+    draining 36s
+  cap=25% off  user_p95=8.0 ms  server_p95=64.27 ms
+    draining 36s
+  cap=25% on  user_p95=1097.74 ms  server_p95=4.82 ms
+    draining 36s
+  cap=50% off  user_p95=106.22 ms  server_p95=9.27 ms
+    draining 36s
+  cap=50% on  user_p95=5.47 ms  server_p95=4.75 ms
+    draining 36s
+  cap=75% off  user_p95=179.29 ms  server_p95=24.19 ms
+    draining 36s
+  cap=75% on  user_p95=5.97 ms  server_p95=26.01 ms
+    draining 36s
+  cap=100% off  user_p95=23.29 ms  server_p95=24.04 ms
+    draining 36s
+  cap=100% on  user_p95=3.37 ms  server_p95=4.75 ms
+==> Sweeps complete. Evidence: evidence/ddos-sweeps-20261121-200422/
+==> Cleanup / restore
+  lab restored

@@ -1,0 +1,5 @@
+=== DDoS sweeps  2026-11-23T21:56:48+00:00  PHASE=both  CAPS=[10 15 25 50 75 100]  ATTACKERS=[1 2 4 8 16 32 64 128]
+==> Launch 128 flood clients from ssle-loadclient (sequential) + push payload
+  ERROR: ddos-cap-75 did not reach RUNNING (container-start ceiling? lower the attacker count)
+==> Cleanup / restore
+  lab restored

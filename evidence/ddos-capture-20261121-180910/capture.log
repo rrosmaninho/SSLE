@@ -1,0 +1,21 @@
+=== DDoS capture  2026-11-21T18:09:10+00:00  DUR=20 SWEEP=[1 2]
+==> Snapshot target (pre-capture)
+  ingestion/pre-capture
+==> Provision 2 client containers (ab)
+  target URL http://10.255.255.111:5001/ingest
+==> Throttle target to 10% CPU / 256 MiB (makes a bounded flood visible)
+==> Time-series  mode=off  (20 s, 2 clients)
+  draining 32s (clearing the metric window)
+  wrote /home/rrosmaninho/SSLE/evidence/ddos-capture-20261121-180910/timeseries-off.csv (7 samples)
+==> Time-series  mode=on  (20 s, 2 clients)
+  draining 32s (clearing the metric window)
+  wrote /home/rrosmaninho/SSLE/evidence/ddos-capture-20261121-180910/timeseries-on.csv (7 samples)
+==> Sweep  mode=off  counts=[1 2]
+  draining 32s (clearing the metric window)
+  clients=1  peak p95=90.93 ms
+  draining 32s (clearing the metric window)
+  clients=2  peak p95=92.34 ms
+==> Sweep  mode=on  counts=[1 2]
+  draining 32s (clearing the metric window)
+  clients=1  peak p95=137.5 ms
+  draining 32s (clearing the metric window)

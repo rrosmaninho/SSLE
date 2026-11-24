@@ -1,0 +1,34 @@
+=== DNS hijacking / phishing experiment  2026-11-21T12:37:40+00:00
+  attacker (rogue resolver + clone): 10.255.255.146
+  victim:                           10.255.255.58
+  defender (protective resolver):   10.255.255.240
+==> PHASE 1 - Baseline: victim uses the protective resolver
+  dig bank-legit.example @protective -> 10.255.255.50  (legitimate, resolves normally)
+==> PHASE 2 - Attack: DNS hijack + phishing clone
+  rogue dnsmasq running on 10.255.255.146
+  victim points resolv.conf at the rogue resolver and looks up the bank:
+    dig bank-lab.example @rogue -> 10.255.255.146  (hijacked to the clone at 10.255.255.146)
+    victim fetches the site -> BankLab Online - Secure Sign In
+    CREDENTIALS CAPTURED at the attacker: 2026-11-21T12:37:54.986825+00:00 captured from=10.255.255.58 user='joao.silva' pass='Sup3rSecret!'
+==> PHASE 3 - Defense: victim switches to the protective resolver
+  dig bank-lab.example @protective -> 0.0.0.0  (0.0.0.0 = SINKHOLED, not the clone)
+  dig secure-bank-login.example @protective -> (NXDOMAIN)  (lookalike, WARN)
+==> PHASE 4 - Campaign + response (repeated phishing lookups)
+  8 sinkholed lookups generated from 10.255.255.58
+==> PHASE 5 - Detection (Wazuh rules on the resolver decision log)
+  Wazuh WARN (100301):     0
+  Wazuh SINKHOLE (100302): 0
+  Wazuh campaign (100303): 0
+==> PHASE 6 - Post-mortem
+The hijack works by controlling the resolver the victim uses: pointed at
+the rogue resolver, the bank name resolves to the clone and credentials
+are captured. The defence is a protective resolver that scores the domain
+BEFORE answering (risk = category + reports + domain age + DNSSEC + IP
+reputation) and sinkholes the phishing name in the data path, so the
+victim never reaches the clone. The SIEM turns each resolver decision into
+an event: WARN, SINKHOLE, and a campaign alert on repeated hits.
+Honest limits: reputation is evidence about the PAST, so a brand-new
+domain with no history scores low (ADTree counter-defence C1); and the
+defence only holds where the protective resolver is the one actually in
+use - if the attacker controls resolv.conf, it can bypass it (C2 / gap
+D3.5, pinned resolver configuration).

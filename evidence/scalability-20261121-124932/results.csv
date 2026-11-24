@@ -1,0 +1,4 @@
+sensors,registered,register_s,ingest_rps,p95_ms,storage_rps,vm_cpu_pct,vm_mem_used_mb,registry_rss_mb,storage_rss_mb,ingestion_rss_mb
+10,10,0,2.0,4.9,2.0,0.9,154.1,21.2,30.7,18.8
+50,50,2,10.0,4.8,10.0,1.0,155.2,21.5,30.7,18.8
+100,100,3,0.0,nan,0.0,0.9,165.0,21.6,30.2,18.8

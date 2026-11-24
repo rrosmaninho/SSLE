@@ -1,0 +1,4 @@
+=== DoS mitigation comparison  2026-11-21T14:15:46+00:00
+Bounded flood: 1000 requests, concurrency 10, single sensor identity.
+
+BEFORE: rate limiting effectively disabled (RATE_LIMIT_RPS very high)
