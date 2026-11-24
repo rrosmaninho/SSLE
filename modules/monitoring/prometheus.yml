@@ -1,0 +1,78 @@
+# Prometheus configuration for the SSLE architecture.
+#
+# Targets are NOT listed statically. Prometheus asks the Service Registry
+# (/sd, Prometheus HTTP SD format) which instances exist and where they are,
+# so scaling the architecture to 10/50/100 sensors needs no change here.
+# Each target carries its location labels (region, dc, rack, node), which is
+# what makes per-location monitoring and fast incident location possible.
+
+global:
+  scrape_interval: 15s
+  scrape_timeout: 10s
+  evaluation_interval: 15s
+  external_labels:
+    monitor: ssle
+
+rule_files:
+  - /etc/prometheus/rules/*.yml
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ['localhost:9093']
+
+scrape_configs:
+  # The registry bootstraps discovery, so it cannot be discovered through
+  # itself; it is the one static target.
+  - job_name: registry
+    # ssle_registry_services describes OTHER elements' locations, so the
+    # labels carried in the metric must win over this target's own labels.
+    # Without this, every fleet counter would be stamped with the registry's
+    # own dc/rack and per-location queries would collapse into one bucket.
+    honor_labels: true
+    static_configs:
+      - targets: ['REGISTRY_HOST:5050']
+        labels:
+          kind: registry
+          service: registry-01.node1.rack1.dc-aveiro.pt-centro.pt
+          region: pt-centro.pt
+          dc: dc-aveiro
+          rack: rack1
+          node: node1
+
+  # Application metrics, discovered from the registry.
+  - job_name: ssle-services
+    http_sd_configs:
+      - url: http://REGISTRY_HOST:5050/sd
+        refresh_interval: 15s
+
+  # Host metrics (CPU, memory, disk, network) for the same containers.
+  # Same discovery source, with the port rewritten to the node exporter's.
+  - job_name: node
+    http_sd_configs:
+      - url: http://REGISTRY_HOST:5050/sd
+        refresh_interval: 15s
+    relabel_configs:
+      - source_labels: [__address__]
+        regex: '([^:]+):.*'
+        replacement: '${1}:9100'
+        target_label: __address__
+      # Several services can share a host; keep one node target per host.
+      - source_labels: [__address__]
+        target_label: instance
+
+  # The monitoring host itself.
+  - job_name: prometheus
+    static_configs:
+      - targets: ['localhost:9090']
+
+  - job_name: monitoring-node
+    static_configs:
+      - targets: ['localhost:9100']
+        labels:
+          kind: monitoring
+          service: prometheus-01.node3.rack1.dc-aveiro.pt-centro.pt
+          region: pt-centro.pt
+          dc: dc-aveiro
+          rack: rack1
+          node: node3

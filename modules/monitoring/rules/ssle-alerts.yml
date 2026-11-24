@@ -1,0 +1,209 @@
+# Alert rules for the SSLE architecture.
+#
+# Alerts are grouped by the FCAPS fault-management stages they serve:
+# detection (something is wrong), isolation (which element), and the signals
+# that later correlate into a root cause. Every alert carries the location
+# labels from service discovery, so the incident source can be named exactly
+# (e.g. rack2 of dc-aveiro) rather than "a sensor somewhere".
+#
+# The `cause` label marks alerts that are candidate ROOT causes; Alertmanager
+# inhibition uses it to suppress the symptoms they explain.
+
+groups:
+  - name: availability
+    rules:
+      # ---- Root causes -------------------------------------------------
+      - alert: RegistryDown
+        expr: up{job="registry"} == 0
+        for: 30s
+        labels:
+          severity: critical
+          cause: registry
+        annotations:
+          summary: "Service Registry is down"
+          description: >-
+            The registry at {{ $labels.instance }} is unreachable. Service
+            discovery is impossible, so every service that needs to find a
+            dependency will fail. This is a single point of failure in the
+            current design.
+
+      - alert: NodeDown
+        expr: up{job="node"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          cause: node
+        annotations:
+          summary: "Node {{ $labels.instance }} is unreachable"
+          description: >-
+            Host metrics cannot be collected from {{ $labels.instance }}.
+            Services hosted there are expected to be unreachable too.
+
+      # ---- Symptoms ----------------------------------------------------
+      - alert: ServiceDown
+        expr: up{job="ssle-services"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "{{ $labels.kind }} down at {{ $labels.rack }}/{{ $labels.dc }}"
+          description: >-
+            {{ $labels.service }} ({{ $labels.instance }}) has not answered a
+            scrape for 1 minute. Location: node {{ $labels.node }}, rack
+            {{ $labels.rack }}, datacenter {{ $labels.dc }}.
+
+      - alert: ServiceDisappearedFromRegistry
+        expr: ssle_registry_services{state="stale"} > 0
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "{{ $value }} stale {{ $labels.kind }} instance(s) in {{ $labels.dc }}"
+          description: >-
+            Instances stopped sending heartbeats and are no longer returned by
+            discovery. Either they died, or they were deregistered as an
+            incident response.
+
+  - name: data-pipeline
+    rules:
+      - alert: NoDataIngested
+        expr: rate(ssle_ingestion_received_total[2m]) == 0
+        for: 3m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Ingestion is receiving no readings"
+          description: >-
+            No readings have arrived for 3 minutes. Either all sensors are
+            down, or they cannot reach ingestion.
+
+      - alert: IngestionCannotReachStorage
+        expr: rate(ssle_ingestion_failed_total[2m]) > 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Ingestion is failing to forward readings"
+          description: >-
+            Readings are arriving but cannot be stored; data is being lost at
+            a rate of {{ printf "%.2f" $value }} per second.
+
+      - alert: SensorsCannotReachIngestion
+        expr: rate(ssle_sensor_failed_total[2m]) > 0
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Sensor {{ $labels.sensor }} cannot deliver readings"
+          description: >-
+            Failed sends at {{ printf "%.2f" $value }} per second. The sensor
+            is alive, so the problem is downstream or in the network.
+
+      - alert: StorageWriteErrors
+        expr: rate(ssle_storage_errors_total[5m]) > 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Storage is rejecting writes"
+          description: >-
+            {{ printf "%.2f" $value }} failed inserts per second. Possible
+            causes: malformed payloads, database locked, or disk full.
+
+      - alert: AnalyticsCannotReachStorage
+        expr: ssle_analytics_storage_up == 0
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Analytics cannot read from storage"
+          description: >-
+            The analytics service has not completed a poll of storage for 2
+            minutes; reported aggregates are stale.
+
+  - name: anomalies
+    rules:
+      # A "general anomaly" signal, as the spec asks: not an attack
+      # signature, just a measurement that should not happen.
+      - alert: ImplausibleSensorReadings
+        expr: ssle_analytics_anomalies > 0
+        for: 1m
+        labels:
+          severity: warning
+          kind: anomaly
+        annotations:
+          summary: "{{ $value }} implausible temperature reading(s)"
+          description: >-
+            Readings outside the plausible band (-20..60 C) reached storage.
+            Causes to correlate: faulty sensor, misconfigured unit, or data
+            injected by something that is not a real sensor.
+
+      - alert: SensorReadingStuck
+        expr: stddev_over_time(ssle_sensor_last_value[10m]) == 0
+        for: 10m
+        labels:
+          severity: warning
+          kind: anomaly
+        annotations:
+          summary: "Sensor {{ $labels.sensor }} reports a constant value"
+          description: >-
+            The value has not changed in 10 minutes. A real temperature sensor
+            fluctuates; a frozen value suggests a stuck sensor or replayed data.
+
+  - name: capacity
+    rules:
+      # The proactive DoS control firing: readings being shed by per-identity
+      # rate limiting. Unlike the p95/rate signals, this names WHICH control
+      # acted, and (unlike the per-IP SIEM rule) it does not fire on a node's
+      # legitimate aggregate load, because the limit is per sensor identity.
+      - alert: IngestionRateLimiting
+        expr: rate(ssle_ingestion_ratelimited_total[2m]) > 1
+        for: 1m
+        labels:
+          severity: warning
+          kind: availability
+        annotations:
+          summary: "Ingestion is shedding readings via per-identity rate limiting"
+          description: >-
+            {{ printf "%.1f" $value }} readings/s are being rejected with HTTP
+            429. A single identity is exceeding its rate - a flood, a
+            misconfigured sensor, or an attacker reusing one identity.
+
+      # Baseline for the DDoS experiment: p95 latency from the histogram.
+      - alert: IngestionLatencyHigh
+        expr: >-
+          histogram_quantile(0.95,
+            sum by (le) (rate(ssle_ingestion_latency_seconds_bucket[2m]))) > 0.25
+        for: 2m
+        labels:
+          severity: warning
+          kind: availability
+        annotations:
+          summary: "Ingestion p95 latency above 250 ms"
+          description: >-
+            p95 is {{ printf "%.3f" $value }}s. Compare with the measured
+            baseline before concluding this is an attack: a legitimate flash
+            crowd looks similar in this metric alone.
+
+      - alert: HighCpuUsage
+        expr: >-
+          100 - (avg by (instance, service, dc, rack, node)
+            (rate(node_cpu_seconds_total{mode="idle"}[2m])) * 100) > 80
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "CPU above 80% on {{ $labels.instance }}"
+          description: >-
+            {{ printf "%.1f" $value }}% CPU on node {{ $labels.node }},
+            rack {{ $labels.rack }}, dc {{ $labels.dc }}.
+
+      - alert: LowMemory
+        expr: >-
+          node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes * 100 < 15
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Less than 15% memory available on {{ $labels.instance }}"
+          description: "{{ printf \"%.1f\" $value }}% of memory is available."

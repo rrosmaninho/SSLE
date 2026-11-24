@@ -1,0 +1,72 @@
+# Alertmanager configuration.
+#
+# The point of this file for the project is ROOT-CAUSE CORRELATION. A failure
+# in a service-oriented architecture does not produce one alert; it produces a
+# cascade. When the registry dies, every service that needs discovery starts
+# failing, sensors cannot deliver, storage stops growing: a dozen alerts for
+# one fault.
+#
+# Grouping collapses related alerts into one notification; inhibition
+# suppresses the SYMPTOMS once their CAUSE is already firing, so what reaches
+# the operator is the fault to fix, not its consequences. This is the
+# "correlation for root cause detection" step of the FCAPS fault workflow
+# (detect -> isolate -> correlate -> mitigate -> post-mortem).
+
+global:
+  resolve_timeout: 2m
+
+route:
+  receiver: default
+  # Alerts about the same element and severity arrive as one notification.
+  group_by: ['alertname', 'dc', 'rack', 'node']
+  group_wait: 30s          # let a cascade arrive before notifying
+  group_interval: 2m
+  repeat_interval: 1h
+  routes:
+    - matchers: [severity = "critical"]
+      receiver: critical
+      group_wait: 10s
+
+receivers:
+  # The lab has no mail/Slack path on purpose (the lab network is isolated),
+  # so notifications are observable through the Alertmanager UI and API.
+  - name: default
+  - name: critical
+
+inhibit_rules:
+  # 1. The registry is the discovery backbone. If it is down, every service
+  #    that fails to find a dependency is a symptom, not a separate fault.
+  - source_matchers: [alertname = "RegistryDown"]
+    target_matchers:
+      - alertname =~ "ServiceDisappearedFromRegistry|NoDataIngested|IngestionCannotReachStorage|SensorsCannotReachIngestion|AnalyticsCannotReachStorage"
+    equal: []
+
+  # 2. A dead host explains every service alert on that same host.
+  - source_matchers: [alertname = "NodeDown"]
+    target_matchers: [alertname = "ServiceDown"]
+    equal: ['instance']
+
+  # 3. A dead host explains the location-level symptoms on its node.
+  - source_matchers: [alertname = "NodeDown"]
+    target_matchers: [alertname =~ "ServiceDown|SensorsCannotReachIngestion"]
+    equal: ['node', 'rack', 'dc']
+
+  # 4. If ingestion itself is down, sensor delivery failures and the
+  #    "no data" alert are its consequences.
+  - source_matchers: [alertname = "ServiceDown", kind = "ingestion"]
+    target_matchers:
+      - alertname =~ "NoDataIngested|SensorsCannotReachIngestion"
+    equal: []
+
+  # 5. If storage is down, ingestion's forwarding failures and analytics'
+  #    stale data are consequences of the same fault.
+  - source_matchers: [alertname = "ServiceDown", kind = "storage"]
+    target_matchers:
+      - alertname =~ "IngestionCannotReachStorage|AnalyticsCannotReachStorage|StorageWriteErrors"
+    equal: []
+
+  # 6. Any critical alert about an element outranks a warning about the same
+  #    element: report the severe one.
+  - source_matchers: [severity = "critical"]
+    target_matchers: [severity = "warning"]
+    equal: ['service']
